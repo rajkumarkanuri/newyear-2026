@@ -24,7 +24,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            touch-action: none; /* Prevents scrolling on mobile */
+            /* CRITICAL FOR MOBILE: Prevents scrolling while holding button */
+            touch-action: none; 
         }
 
         #starfield {
@@ -55,9 +56,11 @@
             line-height: 1;
             position: absolute;
             transition: transform 0.1s;
-            /* Default Centering */
+            /* Default: Centered */
             top: 50%;
             transform: translateY(-50%);
+            width: 100%;
+            text-align: center;
         }
 
         #year-2025 {
@@ -71,9 +74,14 @@
 
         #year-2026 {
             opacity: 0;
+            /* Start hidden and scaled down */
             transform: translateY(-50%) scale(0);
             color: white;
-            text-shadow: 0 0 10px var(--neon-blue), 0 0 40px var(--neon-purple);
+            text-shadow: 
+                0 0 10px var(--neon-blue),
+                0 0 20px var(--neon-blue),
+                0 0 40px var(--neon-purple);
+            animation: none;
         }
 
         /* --- WARP BUTTON --- */
@@ -101,7 +109,7 @@
             transition: all 0.2s;
             overflow: hidden;
             box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent; /* Remove blue highlight on tap */
         }
 
         #warp-progress {
@@ -120,7 +128,7 @@
         /* --- MESSAGES --- */
         #message-area {
             position: absolute;
-            bottom: 30%; /* Positioned above button */
+            bottom: 28%; /* Just above the button */
             width: 90%;
             text-align: center;
             height: 60px;
@@ -133,6 +141,7 @@
             letter-spacing: 2px;
             opacity: 0.8;
             text-shadow: 0 0 5px var(--neon-blue);
+            transition: opacity 0.5s;
         }
 
         #quote-container {
@@ -154,6 +163,7 @@
             font-style: italic;
         }
 
+        /* The Final "HAPPY NEW YEAR" Style */
         .finale-text {
             font-family: 'Orbitron', sans-serif !important;
             font-size: 3rem !important;
@@ -177,19 +187,6 @@
             z-index: 50;
             pointer-events: none;
             text-transform: uppercase;
-        }
-
-        /* --- MOBILE ADJUSTMENTS --- */
-        @media (max-width: 600px) {
-            .year-display { 
-                font-size: 25vw; 
-                /* FIX: Move year higher on mobile so it's not "down" */
-                top: 40% !important; 
-                transform: translateY(-50%);
-            }
-            #warp-btn { width: 100px; height: 100px; }
-            .finale-text { font-size: 2rem !important; }
-            #message-area { bottom: 32%; } /* Adjust message spacing */
         }
 
         /* --- UTILS --- */
@@ -220,15 +217,27 @@
             width: 10px; height: 10px;
             background-color: #f00; z-index: 50;
         }
+
+        /* --- MOBILE SPECIFIC ADJUSTMENTS --- */
+        @media (max-width: 600px) {
+            .year-display { 
+                font-size: 25vw; 
+                /* Move text UP so it doesn't hit the button on small screens */
+                top: 40% !important; 
+            }
+            #warp-btn { width: 100px; height: 100px; }
+            .finale-text { font-size: 2rem !important; }
+            #message-area { font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>
 
     <audio id="sfx-charge" preload="auto">
-        <source src="song2.mp3" type="audio/mpeg">
+        <source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_078267a032.mp3?filename=sci-fi-charge-up-37410.mp3" type="audio/mpeg">
     </audio>
     <audio id="sfx-warp" preload="auto">
-        <source src="song2.mp3" type="audio/mpeg">
+        <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=cinematic-boom-171285.mp3" type="audio/mpeg">
     </audio>
 
     <canvas id="starfield"></canvas>
@@ -271,7 +280,7 @@
 
         function unlockAudio() {
             if (!audioUnlocked) {
-                // Play silent brief moment to unlock
+                // Play and immediately pause to "unlock" on mobile
                 sfxWarp.play().then(() => { sfxWarp.pause(); sfxWarp.currentTime = 0; }).catch((e) => {});
                 sfxCharge.play().then(() => { sfxCharge.pause(); sfxCharge.currentTime = 0; }).catch((e) => {});
                 audioUnlocked = true;
@@ -354,7 +363,9 @@
 
         const startHold = (e) => {
             if(chargeComplete) return;
-            unlockAudio(); // Unlock audio on first touch
+            // Unlocks audio for mobile
+            unlockAudio();
+            
             holding = true;
             warpSpeed = true;
             speed = 40;
@@ -390,7 +401,7 @@
             if (holding && !chargeComplete) {
                 charge += 1.5;
                 let jitter = charge / 5;
-                // Updated translate logic to respect centered position
+                // Updated translate to keep it centered while shaking
                 year2025.style.transform = `translate(-50%, -50%) translate(${Math.random()*jitter - jitter/2}px, ${Math.random()*jitter - jitter/2}px) scale(${1 - charge/200})`;
                 year2025.style.opacity = (100 - charge) / 100;
             } else if (!holding && charge > 0 && !chargeComplete) {
@@ -423,8 +434,8 @@
             setTimeout(() => {
                 year2025.style.display = 'none';
                 year2026.style.opacity = 1;
-                // year2026 uses CSS transform-origin logic, so we reset transform to allow float animation
-                year2026.style.transform = 'translateY(-50%) scale(1)'; 
+                // Reset transform for the float animation
+                year2026.style.transform = 'translateY(-50%) scale(1)';
                 year2026.classList.add('float');
                 
                 log.innerHTML = "WELCOME TO THE FUTURE";
