@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warp to 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Share+Tech+Mono&family=Rajdhani:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --gold: #ffd700;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            height: 100vh;
+            font-family: 'Share Tech Mono', monospace;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #ui-layer {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        /* --- GPS BUTTON (New Integration) --- */
+        #locate-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 15px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 100;
+            pointer-events: auto; /* Allow clicking */
+            transition: 0.3s;
+            letter-spacing: 2px;
+        }
+
+        #locate-btn:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* --- YEAR DISPLAYS --- */
+        .year-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20vw;
+            line-height: 1;
+            position: absolute;
+            transition: transform 0.1s;
+        }
+
+        #year-2025 {
+            background: linear-gradient(to bottom, #555, #222);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0px 5px 10px rgba(0,0,0,0.8);
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #year-2026 {
+            opacity: 0;
+            transform: scale(0);
+            color: white;
+            text-shadow: 
+                0 0 10px var(--neon-blue),
+                0 0 20px var(--neon-blue),
+                0 0 40px var(--neon-purple);
+            animation: none;
+        }
+
+        /* --- WARP BUTTON --- */
+        .warp-btn-container {
+            position: absolute;
+            bottom: 12%; 
+            pointer-events: auto;
+            text-align: center;
+            z-index: 20;
+        }
+
+        #warp-btn {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: var(--neon-blue);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #warp-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: var(--neon-blue);
+            opacity: 0.5;
+            transition: height 0.1s linear;
+        }
+
+        #btn-text { position: relative; z-index: 2; pointer-events: none; }
+
+        /* --- MESSAGES & QUOTES --- */
+        #message-area {
+            position: absolute;
+            bottom: 25%;
+            width: 90%;
+            text-align: center;
+            height: 60px;
+        }
+
+        #system-log {
+            color: var(--neon-blue);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+            text-shadow: 0 0 5px var(--neon-blue);
+            transition: opacity 0.5s;
+        }
+
+        #quote-container {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            display: none; 
+        }
+
+        .author {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--neon-purple);
+            margin-top: 5px;
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+
+        /* The Final "HAPPY NEW YEAR" Style */
+        .finale-text {
+            font-family: 'Orbitron', sans-serif !important;
+            font-size: 3rem !important;
+            color: var(--gold) !important;
+            font-weight: 900;
+            text-shadow: 0 0 20px var(--gold), 0 0 40px red !important;
+            letter-spacing: 2px;
+        }
+
+        /* --- FOOTER CREDIT --- */
+        .credit-footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: var(--neon-blue);
+            opacity: 0.5;
+            z-index: 50;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+
+        /* --- UTILS --- */
+        .shake { animation: shake-anim 0.5s cubic-bezier(.36,.07,.19,.97) both infinite; }
+        @keyframes shake-anim {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: white; opacity: 0; pointer-events: none;
+            z-index: 100; transition: opacity 2s ease-out;
+        }
+
+        .float { animation: float 6s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+            100% { transform: translateY(0px) scale(1); }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px; height: 10px;
+            background-color: #f00; z-index: 50;
+        }
+
+        @media (max-width: 600px) {
+            .year-display { font-size: 25vw; }
+            #warp-btn { width: 100px; height: 100px; }
+            .finale-text { font-size: 2rem !important; }
+            #locate-btn { top: 10px; right: 10px; padding: 8px 10px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="sfx-charge" preload="auto">
+        <source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_078267a032.mp3?filename=sci-fi-charge-up-37410.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sfx-warp" preload="auto">
+        <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=cinematic-boom-171285.mp3" type="audio/mpeg">
+    </audio>
+
+    <canvas id="starfield"></canvas>
+    <div id="flash-overlay"></div>
+
+    <button id="locate-btn" onclick="initLocation()">[ INITIALIZE GPS ]</button>
+
+    <div id="ui-layer">
+        <div id="year-2025" class="year-display">2025</div>
+        <div id="year-2026" class="year-display">2026</div>
+        
+        <div id="message-area">
+            <div id="system-log">System Ready</div>
+            <div id="quote-container"></div>
+        </div>
+    </div>
+
+    <div class="warp-btn-container">
+        <div id="warp-btn">
+            <div id="warp-progress"></div>
+            <span id="btn-text">HOLD<br>TO WARP</span>
+        </div>
+    </div>
+
+    <div class="credit-footer">
+        Designed by Rajkumar
+    </div>
+
+    <script>
+        // --- 1. DATA ---
+        const quotes = [
+            { text: "The future belongs to those who prepare for it today.", author: "Malcolm X" },
+            { text: "Your potential is endless.", author: "2026 Vision" },
+            { text: "This is the beginning of anything you want.", author: "New Year" }
+        ];
+
+        // --- 2. LOCATION LOGIC (Integrated) ---
+        function initLocation() {
+            const log = document.getElementById('system-log');
+            const btn = document.getElementById('locate-btn');
+
+            if (navigator.geolocation) {
+                log.innerHTML = "SCANNING COORDINATES...";
+                btn.innerHTML = "[ SCANNING... ]";
+                btn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        // Use OpenStreetMap to get city name
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                const city = data.address.city || data.address.town || data.address.state || "Unknown Sector";
+                                const country = data.address.country || "Earth";
+                                
+                                log.innerHTML = `LOCATION LOCKED: ${city.toUpperCase()}, ${country.toUpperCase()}`;
+                                log.style.color = "#00f3ff";
+                                btn.innerHTML = "[ LOCKED ]";
+                                btn.style.borderColor = "#33ff33";
+                                btn.style.color = "#33ff33";
+                            })
+                            .catch(() => {
+                                log.innerHTML = `COORDS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                                btn.innerHTML = "[ LOCKED ]";
+                            });
+                    },
+                    (error) => {
+                        log.innerHTML = "GPS SIGNAL LOST. MANUAL OVERRIDE.";
+                        btn.innerHTML = "[ FAILED ]";
+                        btn.style.borderColor = "red";
+                        btn.style.color = "red";
+                    }
+                );
+            } else {
+                log.innerHTML = "GPS MODULE NOT INSTALLED.";
+            }
+        }
+
+        // --- 3. STARFIELD ---
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let stars = [];
+        const numStars = 800;
+        let speed = 0.5;
+        let warpSpeed = false;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Star {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = (Math.random() - 0.5) * width * 2;
+                this.y = (Math.random() - 0.5) * height * 2;
+                this.z = Math.random() * width;
+                this.pz = this.z;
+            }
+            update() {
+                this.z -= speed;
+                if (this.z <= 1) {
+                    this.reset();
+                    this.z = width;
+                    this.pz = this.z;
+                }
+            }
+            draw() {
+                let x = (this.x / this.z) * width/2 + width/2;
+                let y = (this.y / this.z) * height/2 + height/2;
+                let px = (this.x / this.pz) * width/2 + width/2;
+                let py = (this.y / this.pz) * height/2 + height/2;
+                this.pz = this.z;
+                let opacity = 1 - this.z / width;
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                ctx.lineWidth = warpSpeed ? 3 : 1;
+                ctx.moveTo(px, py);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+        }
+        for(let i=0; i<numStars; i++) stars.push(new Star());
+        function animateStars() {
+            ctx.fillStyle = warpSpeed ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, width, height);
+            stars.forEach(star => { star.update(); star.draw(); });
+            requestAnimationFrame(animateStars);
+        }
+        animateStars();
+
+        // --- 4. INTERACTION ---
+        const btn = document.getElementById('warp-btn');
+        const progress = document.getElementById('warp-progress');
+        const btnText = document.getElementById('btn-text');
+        const uiLayer = document.getElementById('ui-layer');
+        const year2025 = document.getElementById('year-2025');
+        const year2026 = document.getElementById('year-2026');
+        const flash = document.getElementById('flash-overlay');
+        const log = document.getElementById('system-log');
+        const quoteContainer = document.getElementById('quote-container');
+        const locateBtn = document.getElementById('locate-btn');
+        const sfxCharge = document.getElementById('sfx-charge');
+        const sfxWarp = document.getElementById('sfx-warp');
+        
+        sfxCharge.volume = 0.5;
+        let holding = false;
+        let charge = 0;
+        let chargeComplete = false;
+        let quoteIndex = 0;
+
+        const startHold = (e) => {
+            if(chargeComplete) return;
+            e.preventDefault();
+            holding = true;
+            warpSpeed = true;
+            speed = 40;
+            sfxCharge.currentTime = 0;
+            sfxCharge.play();
+            uiLayer.classList.add('shake');
+            btnText.innerHTML = "CHARGING...";
+            // Don't overwrite log if it has location data, unless it's just "System Ready"
+            if(log.innerHTML === "SYSTEM READY") {
+                log.innerHTML = "HYPERDRIVE ENGAGED";
+            }
+        };
+
+        const endHold = (e) => {
+            if(chargeComplete) return;
+            e.preventDefault();
+            holding = false;
+            warpSpeed = false;
+            speed = 0.5;
+            sfxCharge.pause();
+            sfxCharge.currentTime = 0;
+            uiLayer.classList.remove('shake');
+            btnText.innerHTML = "HOLD<br>TO WARP";
+            // Revert log only if we haven't warped
+            if(log.innerHTML === "HYPERDRIVE ENGAGED") {
+                log.innerHTML = "SYSTEM READY";
+            }
+        };
+
+        btn.addEventListener('mousedown', startHold);
+        btn.addEventListener('touchstart', startHold);
+        window.addEventListener('mouseup', endHold);
+        window.addEventListener('touchend', endHold);
+
+        function gameLoop() {
+            if (holding && !chargeComplete) {
+                charge += 1.5;
+                let jitter = charge / 5;
+                year2025.style.transform = `translate(${Math.random()*jitter - jitter/2}px, ${Math.random()*jitter - jitter/2}px) scale(${1 - charge/200})`;
+                year2025.style.opacity = (100 - charge) / 100;
+            } else if (!holding && charge > 0 && !chargeComplete) {
+                charge -= 3;
+                year2025.style.transform = `scale(1)`;
+                year2025.style.opacity = 1;
+            }
+            if (charge < 0) charge = 0;
+            if (charge > 100) charge = 100;
+            progress.style.height = charge + '%';
+
+            if (charge >= 100 && !chargeComplete) activateWarp();
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+
+        // --- 5. LOGIC FLOW ---
+        function activateWarp() {
+            chargeComplete = true;
+            uiLayer.classList.remove('shake');
+            sfxCharge.pause();
+            sfxWarp.play();
+
+            // Hide the GPS button during warp
+            locateBtn.style.display = 'none';
+
+            speed = 100;
+            btnText.innerHTML = "WARP";
+            log.innerHTML = "ENTERING 2026...";
+            btn.style.opacity = 0;
+            flash.style.opacity = 1;
+
+            setTimeout(() => {
+                year2025.style.display = 'none';
+                year2026.style.opacity = 1;
+                year2026.style.transform = 'scale(1)';
+                year2026.classList.add('float');
+                
+                log.innerHTML = "WELCOME TO THE FUTURE";
+                log.style.color = "white";
+                
+                flash.style.opacity = 0;
+                speed = 2;
+                warpSpeed = false;
+                
+                setTimeout(() => {
+                   log.style.opacity = 0; 
+                   setTimeout(() => {
+                       log.style.display = 'none';
+                       quoteContainer.style.display = 'block';
+                       void quoteContainer.offsetWidth;
+                       showNextQuote(); // Start sequence
+                   }, 500);
+                }, 3000);
+
+            }, 1500);
+        }
+
+        // --- 6. QUOTES & FINALE LOGIC ---
+        function showNextQuote() {
+            if (quoteIndex >= quotes.length) {
+                showFinale();
+                return;
+            }
+            quoteContainer.style.opacity = 0;
+            
+            setTimeout(() => {
+                const q = quotes[quoteIndex];
+                quoteContainer.innerHTML = `"${q.text}"<span class="author">- ${q.author}</span>`;
+                quoteContainer.style.opacity = 1;
+                quoteIndex++;
+                setTimeout(showNextQuote, 4000); 
+            }, 1000);
+        }
+
+        function showFinale() {
+            quoteContainer.style.opacity = 0;
+            setTimeout(() => {
+                quoteContainer.innerHTML = "HAPPY NEW YEAR";
+                quoteContainer.classList.add('finale-text'); 
+                quoteContainer.style.opacity = 1;
+                fireConfetti();
+            }, 1000);
+        }
+
+        // --- 7. CONFETTI ENGINE ---
+        function fireConfetti() {
+            const colors = ['#ffd700', '#00f3ff', '#bc13fe', '#ffffff'];
+            
+            for (let i = 0; i < 150; i++) {
+                const conf = document.createElement('div');
+                conf.classList.add('confetti');
+                const x = Math.random() * 100; 
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.left = x + 'vw';
+                conf.style.top = '-10px';
+                conf.style.backgroundColor = color;
+                conf.style.transition = `top ${3 + Math.random()}s linear, transform ${3 + Math.random()}s linear`;
+                document.body.appendChild(conf);
+                setTimeout(() => {
+                    conf.style.top = '110vh';
+                    conf.style.transform = `rotate(${Math.random() * 720}deg)`;
+                }, 50);
+            }
+        }
+    </script>
+</body>
+</html>
