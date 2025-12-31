@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warp to 2026</title>
+    <title>Happy New year-2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Share+Tech+Mono&family=Rajdhani:wght@300;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -47,29 +47,6 @@
             pointer-events: none;
         }
 
-        /* --- GPS BUTTON (New Integration) --- */
-        #locate-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: transparent;
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-blue);
-            padding: 10px 15px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            cursor: pointer;
-            z-index: 100;
-            pointer-events: auto; /* Allow clicking */
-            transition: 0.3s;
-            letter-spacing: 2px;
-        }
-
-        #locate-btn:hover {
-            background: rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 10px var(--neon-blue);
-        }
-
         /* --- YEAR DISPLAYS --- */
         .year-display {
             font-family: 'Orbitron', sans-serif;
@@ -100,10 +77,10 @@
             animation: none;
         }
 
-        /* --- WARP BUTTON --- */
+        /* --- BUTTON --- */
         .warp-btn-container {
             position: absolute;
-            bottom: 12%; 
+            bottom: 12%; /* Moved up slightly to make room for credit */
             pointer-events: auto;
             text-align: center;
             z-index: 20;
@@ -189,7 +166,7 @@
             letter-spacing: 2px;
         }
 
-        /* --- FOOTER CREDIT --- */
+        /* --- FOOTER CREDIT (DESIGNED BY RAJKUMAR) --- */
         .credit-footer {
             position: fixed;
             bottom: 10px;
@@ -238,7 +215,6 @@
             .year-display { font-size: 25vw; }
             #warp-btn { width: 100px; height: 100px; }
             .finale-text { font-size: 2rem !important; }
-            #locate-btn { top: 10px; right: 10px; padding: 8px 10px; font-size: 10px; }
         }
     </style>
 </head>
@@ -248,13 +224,11 @@
         <source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_078267a032.mp3?filename=sci-fi-charge-up-37410.mp3" type="audio/mpeg">
     </audio>
     <audio id="sfx-warp" preload="auto">
-        <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=cinematic-boom-171285.mp3" type="audio/mpeg">
+        <source src="song2.mp3" type="audio/mpeg">
     </audio>
 
     <canvas id="starfield"></canvas>
     <div id="flash-overlay"></div>
-
-    <button id="locate-btn" onclick="initLocation()">[ INITIALIZE GPS ]</button>
 
     <div id="ui-layer">
         <div id="year-2025" class="year-display">2025</div>
@@ -285,52 +259,7 @@
             { text: "This is the beginning of anything you want.", author: "New Year" }
         ];
 
-        // --- 2. LOCATION LOGIC (Integrated) ---
-        function initLocation() {
-            const log = document.getElementById('system-log');
-            const btn = document.getElementById('locate-btn');
-
-            if (navigator.geolocation) {
-                log.innerHTML = "SCANNING COORDINATES...";
-                btn.innerHTML = "[ SCANNING... ]";
-                btn.disabled = true;
-
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        // Use OpenStreetMap to get city name
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                const city = data.address.city || data.address.town || data.address.state || "Unknown Sector";
-                                const country = data.address.country || "Earth";
-                                
-                                log.innerHTML = `LOCATION LOCKED: ${city.toUpperCase()}, ${country.toUpperCase()}`;
-                                log.style.color = "#00f3ff";
-                                btn.innerHTML = "[ LOCKED ]";
-                                btn.style.borderColor = "#33ff33";
-                                btn.style.color = "#33ff33";
-                            })
-                            .catch(() => {
-                                log.innerHTML = `COORDS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
-                                btn.innerHTML = "[ LOCKED ]";
-                            });
-                    },
-                    (error) => {
-                        log.innerHTML = "GPS SIGNAL LOST. MANUAL OVERRIDE.";
-                        btn.innerHTML = "[ FAILED ]";
-                        btn.style.borderColor = "red";
-                        btn.style.color = "red";
-                    }
-                );
-            } else {
-                log.innerHTML = "GPS MODULE NOT INSTALLED.";
-            }
-        }
-
-        // --- 3. STARFIELD ---
+        // --- 2. STARFIELD ---
         const canvas = document.getElementById('starfield');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -388,7 +317,7 @@
         }
         animateStars();
 
-        // --- 4. INTERACTION ---
+        // --- 3. INTERACTION ---
         const btn = document.getElementById('warp-btn');
         const progress = document.getElementById('warp-progress');
         const btnText = document.getElementById('btn-text');
@@ -398,7 +327,6 @@
         const flash = document.getElementById('flash-overlay');
         const log = document.getElementById('system-log');
         const quoteContainer = document.getElementById('quote-container');
-        const locateBtn = document.getElementById('locate-btn');
         const sfxCharge = document.getElementById('sfx-charge');
         const sfxWarp = document.getElementById('sfx-warp');
         
@@ -418,10 +346,7 @@
             sfxCharge.play();
             uiLayer.classList.add('shake');
             btnText.innerHTML = "CHARGING...";
-            // Don't overwrite log if it has location data, unless it's just "System Ready"
-            if(log.innerHTML === "SYSTEM READY") {
-                log.innerHTML = "HYPERDRIVE ENGAGED";
-            }
+            log.innerHTML = "HYPERDRIVE ENGAGED";
         };
 
         const endHold = (e) => {
@@ -434,10 +359,7 @@
             sfxCharge.currentTime = 0;
             uiLayer.classList.remove('shake');
             btnText.innerHTML = "HOLD<br>TO WARP";
-            // Revert log only if we haven't warped
-            if(log.innerHTML === "HYPERDRIVE ENGAGED") {
-                log.innerHTML = "SYSTEM READY";
-            }
+            log.innerHTML = "SYSTEM READY";
         };
 
         btn.addEventListener('mousedown', startHold);
@@ -465,15 +387,12 @@
         }
         gameLoop();
 
-        // --- 5. LOGIC FLOW ---
+        // --- 4. LOGIC FLOW ---
         function activateWarp() {
             chargeComplete = true;
             uiLayer.classList.remove('shake');
             sfxCharge.pause();
             sfxWarp.play();
-
-            // Hide the GPS button during warp
-            locateBtn.style.display = 'none';
 
             speed = 100;
             btnText.innerHTML = "WARP";
@@ -507,12 +426,14 @@
             }, 1500);
         }
 
-        // --- 6. QUOTES & FINALE LOGIC ---
+        // --- 5. QUOTES & FINALE LOGIC ---
         function showNextQuote() {
             if (quoteIndex >= quotes.length) {
                 showFinale();
                 return;
             }
+
+            // Show Quote
             quoteContainer.style.opacity = 0;
             
             setTimeout(() => {
@@ -520,6 +441,7 @@
                 quoteContainer.innerHTML = `"${q.text}"<span class="author">- ${q.author}</span>`;
                 quoteContainer.style.opacity = 1;
                 quoteIndex++;
+                
                 setTimeout(showNextQuote, 4000); 
             }, 1000);
         }
@@ -527,27 +449,36 @@
         function showFinale() {
             quoteContainer.style.opacity = 0;
             setTimeout(() => {
+                // Change text to HAPPY NEW YEAR
                 quoteContainer.innerHTML = "HAPPY NEW YEAR";
                 quoteContainer.classList.add('finale-text'); 
                 quoteContainer.style.opacity = 1;
+                
+                // Trigger Confetti
                 fireConfetti();
             }, 1000);
         }
 
-        // --- 7. CONFETTI ENGINE ---
+        // --- 6. CONFETTI ENGINE ---
         function fireConfetti() {
             const colors = ['#ffd700', '#00f3ff', '#bc13fe', '#ffffff'];
             
             for (let i = 0; i < 150; i++) {
                 const conf = document.createElement('div');
                 conf.classList.add('confetti');
+                
                 const x = Math.random() * 100; 
                 const color = colors[Math.floor(Math.random() * colors.length)];
+                
                 conf.style.left = x + 'vw';
                 conf.style.top = '-10px';
                 conf.style.backgroundColor = color;
+                
+                // Physics
                 conf.style.transition = `top ${3 + Math.random()}s linear, transform ${3 + Math.random()}s linear`;
+                
                 document.body.appendChild(conf);
+
                 setTimeout(() => {
                     conf.style.top = '110vh';
                     conf.style.transform = `rotate(${Math.random() * 720}deg)`;
