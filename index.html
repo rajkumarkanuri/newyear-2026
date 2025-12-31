@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Happy New year-2026</title>
+    <title>Warp to 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Share+Tech+Mono&family=Rajdhani:wght@300;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,6 +24,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            /* Prevent scrolling on mobile */
+            touch-action: none; 
         }
 
         #starfield {
@@ -45,6 +47,30 @@
             align-items: center;
             justify-content: center;
             pointer-events: none;
+        }
+
+        /* --- GPS BUTTON --- */
+        #locate-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 15px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 100;
+            pointer-events: auto;
+            transition: 0.3s;
+            letter-spacing: 2px;
+            backdrop-filter: blur(5px);
+        }
+
+        #locate-btn:active {
+            background: var(--neon-blue);
+            color: black;
         }
 
         /* --- YEAR DISPLAYS --- */
@@ -77,10 +103,10 @@
             animation: none;
         }
 
-        /* --- BUTTON --- */
+        /* --- WARP BUTTON --- */
         .warp-btn-container {
             position: absolute;
-            bottom: 12%; /* Moved up slightly to make room for credit */
+            bottom: 15%; 
             pointer-events: auto;
             text-align: center;
             z-index: 20;
@@ -88,8 +114,8 @@
 
         #warp-btn {
             position: relative;
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.5);
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -102,7 +128,7 @@
             transition: all 0.2s;
             overflow: hidden;
             box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
         }
 
         #warp-progress {
@@ -118,10 +144,10 @@
 
         #btn-text { position: relative; z-index: 2; pointer-events: none; }
 
-        /* --- MESSAGES & QUOTES --- */
+        /* --- MESSAGES --- */
         #message-area {
             position: absolute;
-            bottom: 25%;
+            bottom: 28%;
             width: 90%;
             text-align: center;
             height: 60px;
@@ -166,10 +192,10 @@
             letter-spacing: 2px;
         }
 
-        /* --- FOOTER CREDIT (DESIGNED BY RAJKUMAR) --- */
+        /* --- FOOTER CREDIT --- */
         .credit-footer {
             position: fixed;
-            bottom: 10px;
+            bottom: 20px;
             width: 100%;
             text-align: center;
             font-family: 'Share Tech Mono', monospace;
@@ -215,6 +241,8 @@
             .year-display { font-size: 25vw; }
             #warp-btn { width: 100px; height: 100px; }
             .finale-text { font-size: 2rem !important; }
+            #locate-btn { top: 15px; right: 15px; padding: 8px 10px; font-size: 10px; }
+            #message-area { font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -224,11 +252,13 @@
         <source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_078267a032.mp3?filename=sci-fi-charge-up-37410.mp3" type="audio/mpeg">
     </audio>
     <audio id="sfx-warp" preload="auto">
-        <source src="song2.mp3" type="audio/mpeg">
+        <source src="music2.mp3" type="audio/mpeg">
     </audio>
 
     <canvas id="starfield"></canvas>
     <div id="flash-overlay"></div>
+
+    <button id="locate-btn" onclick="initLocation()">[ INITIALIZE GPS ]</button>
 
     <div id="ui-layer">
         <div id="year-2025" class="year-display">2025</div>
@@ -259,7 +289,79 @@
             { text: "This is the beginning of anything you want.", author: "New Year" }
         ];
 
-        // --- 2. STARFIELD ---
+        // --- 2. MOBILE AUDIO FIX ---
+        // This is the critical part for mobile support
+        const sfxCharge = document.getElementById('sfx-charge');
+        const sfxWarp = document.getElementById('sfx-warp');
+        sfxCharge.volume = 0.5;
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+            if (!audioUnlocked) {
+                // Play and immediately pause to "unlock" the audio context
+                sfxWarp.play().then(() => {
+                    sfxWarp.pause();
+                    sfxWarp.currentTime = 0;
+                }).catch((e) => console.log("Unlock failed", e));
+                
+                sfxCharge.play().then(() => {
+                    sfxCharge.pause();
+                    sfxCharge.currentTime = 0;
+                }).catch((e) => console.log("Unlock failed", e));
+
+                audioUnlocked = true;
+            }
+        }
+
+        // --- 3. LOCATION SYSTEM ---
+        function initLocation() {
+            // Unlock audio on GPS click too, just in case
+            unlockAudio();
+            
+            const log = document.getElementById('system-log');
+            const btn = document.getElementById('locate-btn');
+
+            if (navigator.geolocation) {
+                log.innerHTML = "SCANNING COORDINATES...";
+                btn.innerHTML = "[ SCANNING... ]";
+                btn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        // Use OpenStreetMap to get city name
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                const city = data.address.city || data.address.town || data.address.state || "Unknown Sector";
+                                const country = data.address.country || "Earth";
+                                
+                                log.innerHTML = `LOCATION LOCKED: ${city.toUpperCase()}, ${country.toUpperCase()}`;
+                                log.style.color = "#00f3ff";
+                                btn.innerHTML = "[ LOCKED ]";
+                                btn.style.borderColor = "#33ff33";
+                                btn.style.color = "#33ff33";
+                            })
+                            .catch(() => {
+                                log.innerHTML = `COORDS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                                btn.innerHTML = "[ LOCKED ]";
+                            });
+                    },
+                    (error) => {
+                        log.innerHTML = "GPS SIGNAL LOST. MANUAL OVERRIDE.";
+                        btn.innerHTML = "[ FAILED ]";
+                        btn.style.borderColor = "red";
+                        btn.style.color = "red";
+                    }
+                );
+            } else {
+                log.innerHTML = "GPS MODULE NOT INSTALLED.";
+            }
+        }
+
+        // --- 4. STARFIELD ENGINE ---
         const canvas = document.getElementById('starfield');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -317,7 +419,7 @@
         }
         animateStars();
 
-        // --- 3. INTERACTION ---
+        // --- 5. INTERACTION LOGIC ---
         const btn = document.getElementById('warp-btn');
         const progress = document.getElementById('warp-progress');
         const btnText = document.getElementById('btn-text');
@@ -327,10 +429,8 @@
         const flash = document.getElementById('flash-overlay');
         const log = document.getElementById('system-log');
         const quoteContainer = document.getElementById('quote-container');
-        const sfxCharge = document.getElementById('sfx-charge');
-        const sfxWarp = document.getElementById('sfx-warp');
+        const locateBtn = document.getElementById('locate-btn');
         
-        sfxCharge.volume = 0.5;
         let holding = false;
         let charge = 0;
         let chargeComplete = false;
@@ -338,43 +438,60 @@
 
         const startHold = (e) => {
             if(chargeComplete) return;
-            e.preventDefault();
+            // Prevent default zooming on some phones, but allow audio unlock
+            // e.preventDefault(); 
+            
+            // UNLOCK AUDIO ON FIRST INTERACTION
+            unlockAudio();
+
             holding = true;
             warpSpeed = true;
             speed = 40;
+            
+            // Play Charge Sound
             sfxCharge.currentTime = 0;
-            sfxCharge.play();
+            sfxCharge.play().catch(e => console.log("Charge error", e));
+
             uiLayer.classList.add('shake');
             btnText.innerHTML = "CHARGING...";
-            log.innerHTML = "HYPERDRIVE ENGAGED";
+            
+            if(log.innerHTML.includes("SYSTEM READY")) {
+                log.innerHTML = "HYPERDRIVE ENGAGED";
+            }
         };
 
         const endHold = (e) => {
             if(chargeComplete) return;
-            e.preventDefault();
             holding = false;
             warpSpeed = false;
             speed = 0.5;
+            
             sfxCharge.pause();
             sfxCharge.currentTime = 0;
+            
             uiLayer.classList.remove('shake');
             btnText.innerHTML = "HOLD<br>TO WARP";
-            log.innerHTML = "SYSTEM READY";
+            
+            if(log.innerHTML === "HYPERDRIVE ENGAGED") {
+                log.innerHTML = "SYSTEM READY";
+            }
         };
 
+        // Attach both Mouse and Touch events for compatibility
         btn.addEventListener('mousedown', startHold);
         btn.addEventListener('touchstart', startHold);
+        
         window.addEventListener('mouseup', endHold);
         window.addEventListener('touchend', endHold);
 
         function gameLoop() {
             if (holding && !chargeComplete) {
-                charge += 1.5;
+                charge += 1.5; // Charge speed
                 let jitter = charge / 5;
                 year2025.style.transform = `translate(${Math.random()*jitter - jitter/2}px, ${Math.random()*jitter - jitter/2}px) scale(${1 - charge/200})`;
                 year2025.style.opacity = (100 - charge) / 100;
             } else if (!holding && charge > 0 && !chargeComplete) {
-                charge -= 3;
+                charge -= 3; // Drain speed
                 year2025.style.transform = `scale(1)`;
                 year2025.style.opacity = 1;
             }
@@ -387,14 +504,17 @@
         }
         gameLoop();
 
-        // --- 4. LOGIC FLOW ---
+        // --- 6. WARP SEQUENCE ---
         function activateWarp() {
             chargeComplete = true;
             uiLayer.classList.remove('shake');
             sfxCharge.pause();
+            
+            // Play Warp Sound (Now works on mobile because unlocked)
             sfxWarp.play();
 
-            speed = 100;
+            locateBtn.style.display = 'none'; // Hide GPS
+            speed = 100; // Stars go fast
             btnText.innerHTML = "WARP";
             log.innerHTML = "ENTERING 2026...";
             btn.style.opacity = 0;
@@ -419,29 +539,25 @@
                        log.style.display = 'none';
                        quoteContainer.style.display = 'block';
                        void quoteContainer.offsetWidth;
-                       showNextQuote(); // Start sequence
+                       showNextQuote();
                    }, 500);
                 }, 3000);
 
             }, 1500);
         }
 
-        // --- 5. QUOTES & FINALE LOGIC ---
+        // --- 7. FINALE ---
         function showNextQuote() {
             if (quoteIndex >= quotes.length) {
                 showFinale();
                 return;
             }
-
-            // Show Quote
             quoteContainer.style.opacity = 0;
-            
             setTimeout(() => {
                 const q = quotes[quoteIndex];
                 quoteContainer.innerHTML = `"${q.text}"<span class="author">- ${q.author}</span>`;
                 quoteContainer.style.opacity = 1;
                 quoteIndex++;
-                
                 setTimeout(showNextQuote, 4000); 
             }, 1000);
         }
@@ -449,36 +565,25 @@
         function showFinale() {
             quoteContainer.style.opacity = 0;
             setTimeout(() => {
-                // Change text to HAPPY NEW YEAR
                 quoteContainer.innerHTML = "HAPPY NEW YEAR";
                 quoteContainer.classList.add('finale-text'); 
                 quoteContainer.style.opacity = 1;
-                
-                // Trigger Confetti
                 fireConfetti();
             }, 1000);
         }
 
-        // --- 6. CONFETTI ENGINE ---
         function fireConfetti() {
             const colors = ['#ffd700', '#00f3ff', '#bc13fe', '#ffffff'];
-            
             for (let i = 0; i < 150; i++) {
                 const conf = document.createElement('div');
                 conf.classList.add('confetti');
-                
                 const x = Math.random() * 100; 
                 const color = colors[Math.floor(Math.random() * colors.length)];
-                
                 conf.style.left = x + 'vw';
                 conf.style.top = '-10px';
                 conf.style.backgroundColor = color;
-                
-                // Physics
                 conf.style.transition = `top ${3 + Math.random()}s linear, transform ${3 + Math.random()}s linear`;
-                
                 document.body.appendChild(conf);
-
                 setTimeout(() => {
                     conf.style.top = '110vh';
                     conf.style.transform = `rotate(${Math.random() * 720}deg)`;
